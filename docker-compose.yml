@@ -1,0 +1,108 @@
+services:
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6380:6379"
+    networks:
+      - waf-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  target:
+    build: ./target
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    networks:
+      - waf-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  waf:
+    build: ./waf
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - TARGET_URL=http://target:3001
+      - REDIS_URL=redis://redis:6379
+      - RATE_LIMIT=100
+      - RATE_LIMIT_WINDOW=60
+      - ENABLE_BEHAVIORAL=true
+      - NODE_ENV=production
+    depends_on:
+      redis:
+        condition: service_healthy
+      target:
+        condition: service_healthy
+    networks:
+      - waf-network
+    restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - PROMETHEUS_URL=http://prometheus:9090
+      - WAF_URL=http://waf:3000
+      - TARGET_URL=http://target:3001
+    depends_on:
+      - waf
+      - target
+    networks:
+      - waf-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.cors.origin=.*'
+    networks:
+      - waf-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - waf-network
+    restart: unless-stopped
+
+networks:
+  waf-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

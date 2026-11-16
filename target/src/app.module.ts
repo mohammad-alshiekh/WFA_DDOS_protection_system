@@ -1,0 +1,13 @@
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { TargetModule } from './target/target.module';
+import { MetricsModule } from './metrics/metrics.module';
+import { MetricsMiddleware } from './metrics/metrics.middleware';
+
+@Module({
+  imports: [TargetModule, MetricsModule],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MetricsMiddleware).forRoutes('*');
+  }
+}

@@ -1,0 +1,7 @@
+FROM alpine:3.19
+RUN apk add --no-cache grafana
+COPY grafana/provisioning /etc/grafana/provisioning
+EXPOSE 3000
+ENV GF_SECURITY_ADMIN_PASSWORD=admin
+ENTRYPOINT ["grafana-server"]
+CMD ["--homepath=/usr/share/grafana", "--config=/etc/grafana/grafana.ini"]
