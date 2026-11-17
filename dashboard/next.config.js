@@ -3,18 +3,22 @@ const nextConfig = {
   output: 'standalone',
   staticPageGenerationTimeout: 120,
   async rewrites() {
+    const prometheusUrl = process.env.PROMETHEUS_URL || 'http://localhost:9090';
+    const wafUrl = process.env.WAF_URL || 'http://localhost:3000';
+    const targetUrl = process.env.TARGET_URL || 'http://localhost:3001';
+
     return [
       {
         source: '/api/prometheus/:path*',
-        destination: 'http://prometheus:9090/:path*',
+        destination: `${prometheusUrl}/:path*`,
       },
       {
         source: '/api/waf/:path*',
-        destination: 'http://waf:3000/:path*',
+        destination: `${wafUrl}/:path*`,
       },
       {
         source: '/api/target/:path*',
-        destination: 'http://target:3001/:path*',
+        destination: `${targetUrl}/:path*`,
       },
     ];
   },
