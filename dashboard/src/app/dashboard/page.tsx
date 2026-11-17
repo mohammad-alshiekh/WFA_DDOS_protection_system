@@ -268,7 +268,7 @@ export default function Dashboard() {
                     <YAxis stroke={CHART_COLORS.axis} fontSize={11} tick={{ fill: CHART_COLORS.text }} />
                     <Tooltip content={customTooltip} />
                     <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                    <Bar dataKey="wafBlocked" fill="#ef4444" name="Blocked by WAF" radius={[6, 6, 0, 0]} maxBarWidth={40} />
+                    <Bar dataKey="wafBlocked" fill="#ef4444" name="Blocked by WAF" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
